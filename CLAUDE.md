@@ -106,6 +106,16 @@ terminal states for it (death), rather than relying on external listeners.
 - **Input**: define actions in the Input Map (`input_map_manage`), reference by
   name — never hardcode raw keycodes in gameplay scripts.
 - **Signals over polling** for decoupled events (enemy died, pickup grabbed).
+- **Sprite facing**: all character/enemy art must face **+X (right)** — that's
+  the axis `look_at()` aims (`local +X` → target). The current art pack
+  (`assets/sprites/survivor_*`, `zombie`) was authored facing **−Y (up)**, so
+  each used sprite is **rotated 90° CW on import** to match. Rotate the source
+  art to the convention; do **not** add per-node `rotation_degrees` offsets to
+  compensate (they don't scale and get forgotten). Any new sprite from this
+  pack needs the same 90° CW rotation. The multi-frame
+  `survivor_spritesheet`/`template` and the gun-icon strips are left unrotated
+  (rotating a strip scrambles its frames) — handle orientation per-frame if
+  they're ever sliced.
 
 ## Gotchas
 
@@ -116,6 +126,16 @@ terminal states for it (death), rather than relying on external listeners.
 - **`.godot/`** is gitignored (build cache); never commit it.
 - The `_mcp_game_helper` autoload in `project.godot` belongs to the plugin —
   leave it.
+- **Reimport doesn't always rebuild textures.** When you change an image's
+  *pixel content* on disk (e.g. rotating a PNG), `filesystem_manage(op=reimport)`
+  can report success without regenerating the baked `.godot/imported/*.ctex` —
+  the editor and running game then keep rendering the **old** texture. Symptom:
+  on-disk PNG looks right, in-game looks stale. Fix: delete the stale
+  `.godot/imported/<name>.png-*.ctex` + `.md5`, then force a real scan
+  (`filesystem_manage(op=write_text)` of a throwaway file triggers one). Verify
+  by checking the `.ctex` mtime is newer than the source PNG before re-running.
+  (Adding/moving a *new* file imports fine via the scan trigger; this only bites
+  on content changes to an already-imported file.)
 
 ## Git
 

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cn6oc7ykd2yyh" path="res://scripts/arena.gd" id="1_7ft05"]
 [ext_resource type="PackedScene" uid="uid://dtv54bh74s7wr" path="res://scenes/player.tscn" id="2_4ag8t"]
+[ext_resource type="Texture2D" uid="uid://buea7rbrv8861" path="res://assets/textures/grass_ground.png" id="2_dpxgc"]
 [ext_resource type="Script" uid="uid://bl5q35lmn71rj" path="res://scripts/spawner.gd" id="3_dpxgc"]
 [ext_resource type="PackedScene" uid="uid://b4b41bqpsuec6" path="res://scenes/enemy.tscn" id="4_oexds"]
 [ext_resource type="Script" uid="uid://cpp17ho7mwnrp" path="res://scripts/hud.gd" id="5_naajo"]
@@ -9,10 +10,9 @@
 [node name="Arena" type="Node2D" unique_id=254965614]
 script = ExtResource("1_7ft05")
 
-[node name="Background" type="ColorRect" parent="." unique_id=1111645134]
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.078431375, 0.08235294, 0.12156863, 1)
+[node name="Ground" type="Sprite2D" parent="." unique_id=445554997]
+texture = ExtResource("2_dpxgc")
+centered = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=182938934]
 position = Vector2(640, 360)
