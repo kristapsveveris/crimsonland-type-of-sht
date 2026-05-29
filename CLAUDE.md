@@ -12,10 +12,29 @@ invariant, don't extract abstractions on first occurrence, no silent failures).
 
 ## Current state
 
-The project is a **bare scaffold** — Godot project + the `godot-ai` editor
-plugin, no game scenes or scripts yet. There is no main scene set. Everything
-below the "Architecture" heading describes the *intended* shape to build
-toward, not what exists. Update this file as real structure lands.
+**First playable vertical slice is in.** The core twin-stick loop works:
+WASD/arrows move, mouse aims, left-click fires; enemies spawn at the arena
+edges, home in on the player, and deal contact damage; the player owns its
+health and death; death triggers a restart after 2s.
+
+What exists (all authored through the Godot MCP):
+
+| Scene / script | Role |
+| --- | --- |
+| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player→HUD signals and the death→restart loop. |
+| `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), click-to-fire on cooldown. Owns health + `died`. |
+| `scenes/bullet.tscn` + `scripts/bullet.gd` | `Area2D` projectile. Forward travel, lifetime despawn, damages enemies on overlap. |
+| `scenes/enemy.tscn` + `scripts/enemy.gd` | Homing `CharacterBody2D`. `Touch` area applies contact damage on a cadence. Owns health + despawn. |
+| `scripts/spawner.gd` | Spawns enemies at random arena edges on an interval (`Spawner` node in arena). |
+| `scripts/hud.gd` | HP readout + game-over banner (HUD `CanvasLayer` in arena). |
+
+**Collision layers**: player = layer 1, enemies = layer 2; bullets mask
+layer 2, the enemy `Touch` area masks layer 1. Bodies don't physically block
+each other yet (masks are 0) — enemies overlap freely, which is acceptable
+for now.
+
+**Not built yet**: weapon variety, waves/score, pickups/perks, audio, hit/death
+juice. See the build order under Architecture.
 
 ## Building through the Godot MCP (`godot-ai`)
 
@@ -45,31 +64,33 @@ raw text edits silently break.
   it — see the parent rule on silent failures.
 - Multiple editors can connect; `session_activate` pins commands to one.
 
-## Architecture (intended)
+## Architecture
 
-Top-down twin-stick shooter ⇒ this is a **2D** game. Note the scaffold still
-carries Godot's default 3D config (`3d/physics_engine="Jolt Physics"`,
-`Forward Plus` renderer); the gameplay will use 2D nodes
-(`CharacterBody2D`, `Area2D`, `GPUParticles2D`). Switch the renderer/physics
-defaults toward 2D when it matters; leave them until then rather than
-churning config preemptively.
+Top-down twin-stick shooter ⇒ this is a **2D** game, using 2D nodes
+(`CharacterBody2D`, `Area2D`, `GPUParticles2D`). Config is set for 2D:
+1280×720 viewport, `canvas_items` stretch, the 3D Jolt override dropped.
+The renderer is still `Forward Plus` (Godot's default) — fine for 2D; switch
+to Mobile/Compatibility only if portability/perf calls for it, not preemptively.
+Placeholder art is primitive `Polygon2D` shapes; swap for sprites later.
 
-Proposed layout (create as needed, don't scaffold empty dirs ahead of use):
+Current layout (create subdirs as needed, don't scaffold empty dirs ahead of use):
 
 ```
-scenes/        # .tscn — main_menu, arena, player, enemies/, pickups/, hud
-scripts/       # .gd — gameplay logic, autoload singletons
-resources/     # .tres — WeaponData, EnemyData, PerkData, WaveData
-assets/        # art, audio, fonts (sprites/, sfx/, music/)
+scenes/        # .tscn — arena (main), player, enemy, bullet  (+ later: menu, pickups/)
+scripts/       # .gd — gameplay logic  (+ later: autoload singletons)
+resources/     # .tres — WeaponData, EnemyData, PerkData, WaveData  (not yet created)
+assets/        # art, audio, fonts  (not yet created)
 addons/        # godot-ai plugin (vendored, committed)
 ```
 
-Likely systems, in rough build order:
-1. **Player** — `CharacterBody2D`, move (keyboard/stick) + aim toward cursor.
-2. **Weapons** — data-driven `WeaponData` resources; firing, projectiles, cooldown.
-3. **Enemies** — wave spawner, steering toward player, contact damage.
-4. **Pickups / perks** — weapon and perk drops, run-scoped modifiers.
-5. **HUD + game loop** — health, ammo, wave/score, death + restart.
+Systems, in rough build order (✓ = done):
+1. ✓ **Player** — `CharacterBody2D`, move + aim toward cursor, click-to-fire.
+2. ✓ **Enemies (basic)** — edge spawner, homing, contact damage.
+3. ✓ **HUD + game loop (basic)** — health readout, death → restart.
+4. **Weapons** — data-driven `WeaponData` resources; fire rate, projectile count, spread.
+5. **Waves + score** — escalating spawn rate/variety, kill count.
+6. **Pickups / perks** — weapon and perk drops, run-scoped modifiers.
+7. **Juice** — hit flash, death particles, screen shake, sfx.
 
 Favor **data-driven** design: enemies, weapons, and perks as `Resource`
 (`.tres`) definitions, not hardcoded branches. The component that owns a piece
