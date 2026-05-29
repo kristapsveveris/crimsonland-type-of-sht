@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dtv54bh74s7wr"]
+
+[ext_resource type="Script" uid="uid://cy45txg05c1nj" path="res://scripts/player.gd" id="1_g2els"]
+[ext_resource type="PackedScene" uid="uid://b8nc1oxx8tf43" path="res://scenes/bullet.tscn" id="2_qhqgy"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_dqkch"]
+radius = 14.0
+
+[node name="Player" type="CharacterBody2D" unique_id=669154557]
+collision_mask = 0
+script = ExtResource("1_g2els")
+bullet_scene = ExtResource("2_qhqgy")
+
+[node name="Polygon2D" type="Polygon2D" parent="." unique_id=396914517]
+color = Color(0.29803923, 0.7882353, 0.9411765, 1)
+polygon = PackedVector2Array(18, 0, -12, -12, -12, 12)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2050286887]
+shape = SubResource("CircleShape2D_dqkch")
+
+[node name="Muzzle" type="Marker2D" parent="." unique_id=825563770]
+position = Vector2(20, 0)

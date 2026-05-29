@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://df666358eaxrs"]
+
+[ext_resource type="Script" uid="uid://cn6oc7ykd2yyh" path="res://scripts/arena.gd" id="1_7ft05"]
+[ext_resource type="PackedScene" uid="uid://dtv54bh74s7wr" path="res://scenes/player.tscn" id="2_4ag8t"]
+[ext_resource type="Script" uid="uid://bl5q35lmn71rj" path="res://scripts/spawner.gd" id="3_dpxgc"]
+[ext_resource type="PackedScene" uid="uid://b4b41bqpsuec6" path="res://scenes/enemy.tscn" id="4_oexds"]
+[ext_resource type="Script" uid="uid://cpp17ho7mwnrp" path="res://scripts/hud.gd" id="5_naajo"]
+
+[node name="Arena" type="Node2D" unique_id=254965614]
+script = ExtResource("1_7ft05")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1111645134]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.078431375, 0.08235294, 0.12156863, 1)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=182938934]
+position = Vector2(640, 360)
+
+[node name="Player" parent="." unique_id=669154557 instance=ExtResource("2_4ag8t")]
+position = Vector2(640, 360)
+
+[node name="Spawner" type="Node2D" parent="." unique_id=99209661]
+script = ExtResource("3_dpxgc")
+enemy_scene = ExtResource("4_oexds")
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1317019120]
+script = ExtResource("5_naajo")
+
+[node name="HealthLabel" type="Label" parent="HUD" unique_id=367539616]
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 116.0
+offset_bottom = 33.0
+text = "HP: 100 / 100"
+
+[node name="GameOverLabel" type="Label" parent="HUD" unique_id=1450982529]
+offset_left = 560.0
+offset_top = 330.0
+offset_right = 652.0
+offset_bottom = 353.0
+text = "GAME OVER"
