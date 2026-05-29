@@ -124,6 +124,22 @@ terminal states for it (death), rather than relying on external listeners.
 - **Telemetry**: the plugin has `godot_ai/telemetry_enabled = true` and posts
   events to an external endpoint. Disable in editor settings if undesired.
 - **`.godot/`** is gitignored (build cache); never commit it.
+- **Autoloads added via MCP need a project reload.** `autoload_manage(add)` /
+  `project_manage(settings_set "autoload/X")` write the entry to
+  `project.godot`, but the *running editor* does not register the singleton as
+  a GDScript global identifier until the project is reloaded — so scripts that
+  reference it by name (`Sfx.play()`) fail to compile **in the editor** (the
+  *game*, a fresh process, works fine). Two responses: (a) reference the
+  singleton by its runtime path instead — `@onready var _sfx: Variant =
+  get_node_or_null(^"/root/Sfx")` — which compiles regardless and is what the
+  `_sfx` refs in player/enemy/arena do; or (b) reload the project. Verify audio
+  via `editor_manage(game_eval)` against `/root/Sfx`, not the editor error log.
+- **The editor doesn't recompile scripts on MCP file ops.** Editing a `.gd` on
+  disk (or via `write_text`/`reimport`) does not make the running editor
+  re-parse it — it keeps reporting the *last* compile result (stale line
+  numbers are the tell). Only a project reload forces a fresh editor compile.
+  The running game always uses the on-disk source, so trust `logs_read(source=
+  "game")` + `game_eval` over `logs_read(source="editor")` after script edits.
 - The `_mcp_game_helper` autoload in `project.godot` belongs to the plugin —
   leave it.
 - **Reimport doesn't always rebuild textures.** When you change an image's
