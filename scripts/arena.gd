@@ -43,6 +43,12 @@ const DEFAULT_PERKS: Array[PerkData] = [
 	preload("res://resources/perks/extra_barrel.tres"),
 	preload("res://resources/perks/fast_learner.tres"),
 	preload("res://resources/perks/bandage.tres"),
+	preload("res://resources/perks/glass_cannon.tres"),
+	preload("res://resources/perks/hollow_points.tres"),
+	preload("res://resources/perks/spray_and_pray.tres"),
+	preload("res://resources/perks/berserker.tres"),
+	preload("res://resources/perks/juggernaut.tres"),
+	preload("res://resources/perks/scavenger.tres"),
 ]
 
 @onready var player: Player = $Player
