@@ -10,6 +10,11 @@ extends Resource
 ## Region into the shared side-view gun sheet (guns_side_view.png, 4×64px frames)
 ## used by weapon pickups. Zero size => pickup shows the whole sheet, so set it.
 @export var icon_region: Rect2 = Rect2(0, 0, 64, 64)
+## Barrel tip in the player's local frame (+X = forward/aim, +Y = gun-hand side).
+## Each survivor_* sprite holds its gun at a different spot and length, so the
+## muzzle (bullet spawn + flash origin) is per-weapon, not a fixed point on the
+## player. Measured from the sprite art; see scenes/player.tscn Muzzle default.
+@export var muzzle_offset: Vector2 = Vector2(20, 0)
 @export_range(0.02, 2.0, 0.01) var fire_cooldown: float = 0.25  ## seconds between shots
 @export_range(1, 24) var projectile_count: int = 1             ## pellets per trigger pull
 @export_range(0.0, 180.0, 0.5) var spread_degrees: float = 0.0 ## total cone width across pellets

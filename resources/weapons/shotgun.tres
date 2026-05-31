@@ -9,6 +9,7 @@ script = ExtResource("1_wd")
 display_name = "Shotgun"
 sprite = ExtResource("2_spr")
 icon_region = Rect2(128, 0, 64, 64)
+muzzle_offset = Vector2(25, 9)
 fire_cooldown = 0.75
 projectile_count = 7
 spread_degrees = 32.0

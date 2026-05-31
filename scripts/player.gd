@@ -92,6 +92,10 @@ func equip_weapon(next: WeaponData) -> void:
 	weapon = next
 	if weapon.sprite != null:
 		_sprite.texture = weapon.sprite
+	# Move the bullet spawn + muzzle flash to this gun's barrel tip. Each sprite
+	# holds its weapon at a different offset/length, so the muzzle is data-driven.
+	muzzle.position = weapon.muzzle_offset
+	_muzzleflash.position = weapon.muzzle_offset
 	_fire_timer = 0.0
 	weapon_changed.emit(weapon)
 

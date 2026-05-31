@@ -9,6 +9,7 @@ script = ExtResource("1_wd")
 display_name = "Rifle"
 sprite = ExtResource("2_spr")
 icon_region = Rect2(64, 0, 64, 64)
+muzzle_offset = Vector2(31, 9)
 fire_cooldown = 0.55
 projectile_count = 1
 spread_degrees = 1.0

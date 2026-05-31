@@ -9,6 +9,7 @@ script = ExtResource("1_wd")
 display_name = "SMG"
 sprite = ExtResource("2_spr")
 icon_region = Rect2(192, 0, 64, 64)
+muzzle_offset = Vector2(30, 9)
 fire_cooldown = 0.07
 projectile_count = 1
 spread_degrees = 7.0
