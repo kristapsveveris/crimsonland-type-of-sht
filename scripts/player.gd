@@ -14,11 +14,19 @@ signal weapon_changed(weapon: WeaponData)
 ## Emitted when the player takes damage (distinct from health_changed, which can
 ## fire for non-damage changes). Drives feedback like camera shake.
 signal hit
+## XP progression. The player owns its XP/level (it owns the stats perks modify,
+## so it owns the transition into a level-up). xp_changed drives the HUD bar;
+## leveled_up tells the game loop to offer a perk choice.
+signal xp_changed(xp: int, xp_to_next: int, level: int)
+signal leveled_up(level: int)
 
 @export var speed: float = 320.0
 @export var max_health: int = 100
 @export var bullet_scene: PackedScene
 @export var footstep_interval: float = 0.3
+## XP needed to reach level 2, multiplied by xp_curve for each level beyond.
+@export var base_xp_to_level: int = 156
+@export var xp_curve: float = 1.5
 ## Equippable arsenal. Left empty in the editor -> falls back to the four
 ## bundled weapons below so the scene works out of the box.
 @export var weapons: Array[WeaponData] = []
@@ -44,6 +52,23 @@ var _fire_timer: float = 0.0
 var _step_timer: float = 0.0
 var _muzzle_timer: float = 0.0
 
+## XP / leveling state.
+var xp: int = 0
+var level: int = 1
+var xp_to_next: int = 0
+
+## Accumulated perk modifiers. Each perk folds into these in apply_perk(); the
+## shoot/move code reads them, so the player never branches on which perk it is.
+var perks: Array[PerkData] = []
+var _damage_mult: float = 1.0
+var _fire_rate_mult: float = 1.0
+var _speed_mult: float = 1.0
+var _bonus_projectiles: int = 0
+var _bonus_pierce: int = 0
+var _regen_per_sec: float = 0.0
+var _xp_mult: float = 1.0
+var _regen_accum: float = 0.0  # fractional HP carried between regen ticks
+
 @onready var muzzle: Marker2D = $Muzzle
 @onready var _muzzleflash: Polygon2D = $MuzzleFlash
 @onready var _sprite: Sprite2D = $Sprite
@@ -55,6 +80,8 @@ func _ready() -> void:
 	add_to_group("player")
 	health = max_health
 	health_changed.emit(health, max_health)
+	xp_to_next = _xp_for_level(level)
+	xp_changed.emit(xp, xp_to_next, level)
 	# Own flash material (red) so the hit tint animates independently.
 	var mat := ShaderMaterial.new()
 	mat.shader = HIT_FLASH_SHADER
@@ -67,17 +94,19 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = dir * speed
+	velocity = dir * speed * _speed_mult
 	move_and_slide()
 	look_at(get_global_mouse_position())
 	_handle_footsteps(delta)
 	_handle_weapon_switch()
 	_handle_muzzle_flash(delta)
+	_handle_regen(delta)
 
 	_fire_timer -= delta
 	if weapon != null and Input.is_action_pressed("fire") and _fire_timer <= 0.0:
 		_shoot()
-		_fire_timer = weapon.fire_cooldown
+		# Perks shorten the cooldown via the fire-rate multiplier (>1 = faster).
+		_fire_timer = weapon.fire_cooldown / _fire_rate_mult
 
 func equip(index: int) -> void:
 	if index < 0 or index >= weapons.size():
@@ -119,21 +148,78 @@ func _handle_muzzle_flash(delta: float) -> void:
 		if _muzzle_timer <= 0.0:
 			_muzzleflash.visible = false
 
+func _handle_regen(delta: float) -> void:
+	if _regen_per_sec <= 0.0 or health <= 0 or health >= max_health:
+		return
+	_regen_accum += _regen_per_sec * delta
+	if _regen_accum >= 1.0:
+		var whole := int(_regen_accum)
+		_regen_accum -= whole
+		health = mini(max_health, health + whole)
+		health_changed.emit(health, max_health)
+
+## Grant XP (kills feed this via the arena). Crosses any number of level
+## thresholds in one go, announcing each — the player owns the level-up
+## transition; the game loop only observes leveled_up to offer a perk.
+func add_xp(amount: int) -> void:
+	if amount <= 0:
+		return
+	xp += int(round(amount * _xp_mult))
+	while xp >= xp_to_next:
+		xp -= xp_to_next
+		level += 1
+		xp_to_next = _xp_for_level(level)
+		leveled_up.emit(level)
+	xp_changed.emit(xp, xp_to_next, level)
+
+func _xp_for_level(lvl: int) -> int:
+	return int(round(base_xp_to_level * pow(xp_curve, lvl - 1)))
+
+func has_perk(perk: PerkData) -> bool:
+	return perks.has(perk)
+
+## Fold a perk's modifiers into the running stat accumulators. The single entry
+## point for "a perk took effect" — shoot/move/regen read the accumulators, so
+## no gameplay code branches on a specific perk.
+func apply_perk(perk: PerkData) -> void:
+	if perk == null:
+		return
+	perks.append(perk)
+	_damage_mult *= perk.damage_mult
+	_fire_rate_mult *= perk.fire_rate_mult
+	_speed_mult *= perk.move_speed_mult
+	_bonus_projectiles += perk.bonus_projectiles
+	_bonus_pierce += perk.bonus_pierce
+	_regen_per_sec += perk.regen_per_sec
+	_xp_mult *= perk.xp_mult
+	if perk.max_health_add != 0:
+		max_health += perk.max_health_add
+		health = mini(max_health, health + maxi(0, perk.max_health_add))
+	if perk.heal_on_pickup > 0:
+		health = mini(max_health, health + perk.heal_on_pickup)
+	health_changed.emit(health, max_health)
+
 func _shoot() -> void:
 	if bullet_scene == null:
 		push_warning("Player.bullet_scene not assigned")
 		return
-	var count := maxi(1, weapon.projectile_count)
-	var spread := deg_to_rad(weapon.spread_degrees)
+	var count := maxi(1, weapon.projectile_count + _bonus_projectiles)
+	var spread_deg := weapon.spread_degrees
+	# Perk-granted extra pellets need somewhere to go: if the gun fires a tight
+	# stream, fan the widened volley out so the bonus shots aren't stacked dead on.
+	if count > weapon.projectile_count and spread_deg <= 0.0:
+		spread_deg = 6.0 * (count - 1)
+	var spread := deg_to_rad(spread_deg)
+	var shot_damage := int(round(weapon.damage * _damage_mult))
 	for i in count:
 		# Spread pellets evenly across the cone; a single pellet fires dead centre.
 		var offset := 0.0 if count == 1 else (float(i) / float(count - 1) - 0.5) * spread
 		var angle := rotation + offset
 		var bullet := bullet_scene.instantiate()
 		bullet.speed = weapon.bullet_speed
-		bullet.damage = weapon.damage
+		bullet.damage = shot_damage
 		bullet.lifetime = weapon.bullet_lifetime
-		bullet.pierce = weapon.pierce
+		bullet.pierce = weapon.pierce + _bonus_pierce
 		bullet.rotation = angle
 		bullet.set_direction(Vector2.RIGHT.rotated(angle))
 		get_tree().current_scene.add_child(bullet)

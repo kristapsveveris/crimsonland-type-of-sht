@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PerkData" load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://gff5y0jc0ell" path="res://scripts/perk_data.gd" id="1_pd"]
+
+[resource]
+script = ExtResource("1_pd")
+display_name = "Rapid Fire"
+description = "+20% fire rate."
+fire_rate_mult = 1.2

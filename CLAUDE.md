@@ -13,7 +13,7 @@ invariant, don't extract abstractions on first occurrence, no silent failures).
 ## Current state
 
 **Vertical slice + data-driven weapons + continuous waves/score + weapon
-pickups + hit/death/fire juice are in.** The
+pickups + XP/level-up perks + hit/death/fire juice are in.** The
 core twin-stick loop works: WASD/arrows move, mouse aims, left-click fires;
 enemies spawn at the arena edges, home in on the player, and deal contact
 damage; the player owns its health and death; death triggers a restart after
@@ -43,8 +43,24 @@ Walking the player over a pickup calls `player.equip_weapon()` and consumes the
 pickup. The kill signal chain now carries the death `position` so the arena can
 place the drop. Pickup icons are **data-driven**: each `WeaponData` holds an
 `icon_region` into the shared 4-frame **`guns_side_view.png`** sheet, and the
-pickup slices it — adding a weapon needs no pickup changes. Perks (the other
-half of #6) are still **not built**.
+pickup slices it — adding a weapon needs no pickup changes.
+
+**Perks close the other half of #6** (Crimsonland's level-up hook). Each kill
+grants the player a **flat `xp_per_kill`** (decoupled from `score_value`, which
+is wave-scaled — leveling pace is governed by the XP curve, not score
+inflation); the player owns its XP/level and the level-up transition, emitting
+`leveled_up`. On level-up the arena waits a short `LEVELUP_DELAY` (run unpaused,
+so the killing blow's blood + sound play out and the dead enemy is visibly gone
+before the action freezes), then **pauses the tree** and the HUD shows a 3-perk
+choice overlay (its `process_mode = ALWAYS` so it stays live while paused);
+clicking a perk calls `player.apply_perk()` and unpauses. Perks are **data-driven** `PerkData`
+`.tres` (nine authored): each holds neutral-default stat modifiers (damage /
+fire-rate / move-speed multipliers, +max-HP, +projectiles, +pierce, regen, +XP,
+one-time heal) that `apply_perk()` folds into accumulators the shoot/move/regen
+code reads — adding a perk needs no code. Several level-ups from one kill
+**queue** and resolve one choice at a time before the action resumes; a
+non-stackable perk drops out of the roll once taken. A scene reload (restart)
+resets XP/level/perks for free.
 
 **Juice (#7) is in.** A shared `hit_flash.gdshader` tints a sprite toward a
 flash colour by a `flash` uniform (0→1, tweened down): enemies flash white on
@@ -60,10 +76,11 @@ What exists (all authored through the Godot MCP):
 
 | Scene / script | Role |
 | --- | --- |
-| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player + spawner → HUD signals (health, weapon, wave, score), owns the run-scoped score/kill tally, the death→restart loop, loot policy (rolls `drop_chance` per kill → spawns a pickup from the drop pool at the death position), and camera-shake wiring (player `hit` → trauma 0.45, death → trauma 1.0). |
-| `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), data-driven fire from the equipped `WeaponData` (cooldown, pellet count, spread). Owns health + `died`; emits `weapon_changed` + `hit` (juice). `equip_weapon()` is the shared equip entry point (number keys + pickups). Juice: red hit-flash material, `MuzzleFlash` polygon on fire. |
+| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player + spawner → HUD signals (health, weapon, wave, score, XP, perks), owns the run-scoped score/kill tally, the death→restart loop, loot policy (rolls `drop_chance` per kill → spawns a pickup from the drop pool at the death position), the perk policy + level-up flow (grants a flat `xp_per_kill` per kill, and on `leveled_up` waits `LEVELUP_DELAY` so the kill resolves visibly, then pauses, rolls `PERK_CHOICES` perks from the pool, shows the choice overlay, applies the pick, then unpauses — queuing multi-level-ups; never pops the menu over a dead player), and camera-shake wiring (player `hit` → trauma 0.45, death → trauma 1.0). |
+| `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), data-driven fire from the equipped `WeaponData` (cooldown, pellet count, spread). Owns health + `died`, and XP/level + the level-up transition (`add_xp` → `leveled_up`); `apply_perk()` folds perk modifiers into stat accumulators the fire/move/regen code reads. Emits `weapon_changed`, `hit`, `xp_changed`, `leveled_up`. `equip_weapon()` is the shared equip entry point (number keys + pickups). Juice: red hit-flash material, `MuzzleFlash` polygon on fire. |
 | `scripts/weapon_data.gd` | `WeaponData` `Resource` — display_name, sprite, `icon_region` (frame into the gun-icon sheet, for pickups), fire_cooldown, projectile_count, spread_degrees, damage, bullet_speed, bullet_lifetime, `pierce` (enemies one shot passes through), fire_sound. |
-| `scenes/pickup.tscn` + `scripts/pickup.gd` | `WeaponPickup` `Area2D` (mask = player layer). A weapon drop lying in the arena; its icon is sliced from `guns_side_view.png` via the weapon's `icon_region`. On player overlap it calls `equip_weapon()` and frees itself (owns its own despawn). |
+| `scripts/perk_data.gd` + `resources/perks/*.tres` | `PerkData` `Resource` (run-scoped modifier) — display_name, description, `stackable`, and neutral-default modifier fields (damage/fire-rate/move-speed mults, max_health_add, bonus_projectiles, bonus_pierce, regen_per_sec, xp_mult, heal_on_pickup). Nine authored: Sharpshooter, Rapid Fire, Adrenaline, Tough Hide, Regeneration, Perforator, Extra Barrel, Fast Learner, Bandage. |
+| `scenes/pickup.tscn` + `scripts/pickup.gd` | `WeaponPickup` `Area2D` (mask = player layer). A weapon drop lying in the arena; its icon is sliced from `guns_side_view.png` via the weapon's `icon_region`. On player overlap it calls `equip_weapon()` and frees itself; if left ungrabbed it **despawns after `lifetime`** (fading over the final `fade_time` via a tween, then self-freeing) — owns its own despawn either way. |
 | `resources/weapons/*.tres` | Pistol / Shotgun / SMG / Rifle definitions (each pairs stats with its `survivor_*` sprite). Rifle is the piercing weapon: slow fire, fast round, `pierce = 5`. |
 | `scenes/bullet.tscn` + `scripts/bullet.gd` | `Area2D` projectile. Per-shot speed/damage/lifetime set by the player before spawn; forward travel, lifetime despawn, damages enemies on overlap. |
 | `scenes/enemy.tscn` + `scripts/enemy.gd` | Homing `CharacterBody2D`. `Touch` area applies contact damage on a cadence. Owns health + despawn; emits `killed(score_value, position)` on death-by-damage (position lets the arena drop loot there). `score_value` + stats are scaled per wave by the spawner. Juice: white hit-flash material, spawns a `BloodBurst` on death. |
@@ -71,7 +88,7 @@ What exists (all authored through the Godot MCP):
 | `scripts/camera_shake.gd` | `CameraShake` (extends `Camera2D`, on the arena camera). Trauma-based shake: `add_trauma()` accumulates, `_process` decays it and applies offset+roll scaled by trauma². Owns its own decay → self-rests at zero. |
 | `assets/shaders/hit_flash.gdshader` | Shared `canvas_item` flash shader: mixes the sprite toward `flash_color` by the `flash` uniform, preserving alpha. Player + enemy each build a per-instance `ShaderMaterial` from it. |
 | `scripts/spawner.gd` | `Spawner` node in arena. Spawns enemies at random edges and owns continuous difficulty escalation (wave # from elapsed time, shrinking interval, per-wave stat scaling, growing burst size). Emits `wave_changed` and forwards `enemy_killed(score_value, position)`. |
-| `scripts/hud.gd` | HP + current-weapon + wave + score/kills readouts and a game-over banner with the final tally (HUD `CanvasLayer` in arena). |
+| `scripts/hud.gd` | HP + current-weapon + wave + score/kills readouts (top-left column), a **top-centre level + XP bar**, a game-over banner with the final tally, and the level-up perk-choice overlay (`PerkChoice` Control, `process_mode = ALWAYS`: builds a button per offered perk, emits `perk_chosen`). HUD `CanvasLayer` in arena. |
 
 **Collision layers**: player = layer 1, enemies = layer 2; bullets mask
 layer 2, the enemy `Touch` area masks layer 1. Enemies now physically block
@@ -85,8 +102,8 @@ the `Touch` area (radius 18) reaches the player body (radius 16) once the two
 bodies rest ~32px apart. **Pickups** are an `Area2D` on layer 0, mask 1 — they
 scan for the player body (layer 1) but nothing scans for them.
 
-**Not built yet**: perks (the other half of #6) and enemy *variety* via
-`EnemyData`. See the build order under Architecture.
+**Not built yet**: enemy *variety* via `EnemyData` (and the deferred
+`WaveData` authoring of waves). See the build order under Architecture.
 
 ## Building through the Godot MCP (`godot-ai`)
 
@@ -130,7 +147,7 @@ Current layout (create subdirs as needed, don't scaffold empty dirs ahead of use
 ```
 scenes/        # .tscn — arena (main), player, enemy, bullet, pickup, blood_burst  (+ later: menu)
 scripts/       # .gd — gameplay logic + Sfx autoload  (+ later: more singletons)
-resources/     # .tres — weapons/ (WeaponData) done; later: EnemyData, PerkData, WaveData
+resources/     # .tres — weapons/ (WeaponData) + perks/ (PerkData) done; later: EnemyData, WaveData
 assets/        # sprites/, audio/, shaders/ (hit_flash)
 addons/        # godot-ai plugin (vendored, committed)
 ```
@@ -141,7 +158,7 @@ Systems, in rough build order (✓ = done):
 3. ✓ **HUD + game loop (basic)** — health readout, death → restart.
 4. ✓ **Weapons** — data-driven `WeaponData` resources; fire rate, projectile count, spread. Four weapons authored; keys 1-4 switch (placeholder for pickups).
 5. ✓ **Waves + score** — continuous escalation (wave # from elapsed time, shrinking interval, per-wave enemy stat scaling, growing burst), kill/score tally on the HUD. Procedural for now; `WaveData`/`EnemyData` variety deferred.
-6. **Pickups / perks** — ✓ weapon drops (kill → `drop_chance` roll → `WeaponPickup` at the death position → walk over to equip). Perks / run-scoped modifiers still deferred.
+6. ✓ **Pickups / perks** — weapon drops (kill → `drop_chance` roll → `WeaponPickup` at the death position → walk over to equip), and XP/level-up perks (kill XP → `leveled_up` → pause + 3-perk choice overlay → `PerkData` modifiers fold into the player's stat accumulators). Nine perks authored.
 7. ✓ **Juice** — hit-flash shader (enemy white / player red), one-shot blood particles on death, trauma-based screen shake, muzzle flash, sfx (already wired). Future polish: death particles for the player, bullet impact sparks, hit-stop.
 
 Favor **data-driven** design: enemies, weapons, and perks as `Resource`
