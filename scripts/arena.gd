@@ -10,6 +10,7 @@ const SND_ROUND_START := preload("res://assets/audio/round_start.wav")
 
 func _ready() -> void:
 	player.health_changed.connect(hud.set_health)
+	player.weapon_changed.connect(hud.set_weapon)
 	player.died.connect(_on_player_died)
 	_sfx.play(SND_ROUND_START)
 

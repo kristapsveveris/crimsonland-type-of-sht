@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://c3j7fcbwb82r8" path="res://scripts/weapon_data.gd" id="1_wd"]
+[ext_resource type="Texture2D" uid="uid://cn4jqa0p1k5li" path="res://assets/sprites/survivor_shotgun.png" id="2_spr"]
+[ext_resource type="AudioStream" uid="uid://4fymkko5jb2i" path="res://assets/audio/shotgun.wav" id="3_snd"]
+
+[resource]
+script = ExtResource("1_wd")
+display_name = "Shotgun"
+sprite = ExtResource("2_spr")
+fire_cooldown = 0.75
+projectile_count = 7
+spread_degrees = 32.0
+damage = 14
+bullet_speed = 820.0
+bullet_lifetime = 0.45
+fire_sound = ExtResource("3_snd")

@@ -40,3 +40,10 @@ offset_top = 330.0
 offset_right = 652.0
 offset_bottom = 353.0
 text = "GAME OVER"
+
+[node name="WeaponLabel" type="Label" parent="HUD" unique_id=1023872424]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 216.0
+offset_bottom = 57.0
+text = "Weapon: Pistol"

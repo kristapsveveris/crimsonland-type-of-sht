@@ -12,29 +12,36 @@ invariant, don't extract abstractions on first occurrence, no silent failures).
 
 ## Current state
 
-**First playable vertical slice is in.** The core twin-stick loop works:
-WASD/arrows move, mouse aims, left-click fires; enemies spawn at the arena
-edges, home in on the player, and deal contact damage; the player owns its
-health and death; death triggers a restart after 2s.
+**Vertical slice + data-driven weapons are in.** The core twin-stick loop
+works: WASD/arrows move, mouse aims, left-click fires; enemies spawn at the
+arena edges, home in on the player, and deal contact damage; the player owns
+its health and death; death triggers a restart after 2s. Firing is now fully
+data-driven — the player reads its stats from an equipped `WeaponData`
+resource and supports multi-projectile spread. Four weapons (Pistol, Shotgun,
+SMG, Rifle) are authored as `.tres`; number keys **1-4** swap between them
+(a stand-in until weapon pickups land in #6). Each weapon has its own fire
+sound (pistol, plus MP5/AWP/M3 trimmed from the CS pack — see Assets).
 
 What exists (all authored through the Godot MCP):
 
 | Scene / script | Role |
 | --- | --- |
-| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player→HUD signals and the death→restart loop. |
-| `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), click-to-fire on cooldown. Owns health + `died`. |
-| `scenes/bullet.tscn` + `scripts/bullet.gd` | `Area2D` projectile. Forward travel, lifetime despawn, damages enemies on overlap. |
+| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player→HUD signals (health, weapon) and the death→restart loop. |
+| `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), data-driven fire from the equipped `WeaponData` (cooldown, pellet count, spread). Owns health + `died`; emits `weapon_changed`. Number keys 1-4 switch weapons. |
+| `scripts/weapon_data.gd` | `WeaponData` `Resource` — display_name, sprite, fire_cooldown, projectile_count, spread_degrees, damage, bullet_speed, bullet_lifetime, `pierce` (enemies one shot passes through), fire_sound. |
+| `resources/weapons/*.tres` | Pistol / Shotgun / SMG / Rifle definitions (each pairs stats with its `survivor_*` sprite). Rifle is the piercing weapon: slow fire, fast round, `pierce = 5`. |
+| `scenes/bullet.tscn` + `scripts/bullet.gd` | `Area2D` projectile. Per-shot speed/damage/lifetime set by the player before spawn; forward travel, lifetime despawn, damages enemies on overlap. |
 | `scenes/enemy.tscn` + `scripts/enemy.gd` | Homing `CharacterBody2D`. `Touch` area applies contact damage on a cadence. Owns health + despawn. |
 | `scripts/spawner.gd` | Spawns enemies at random arena edges on an interval (`Spawner` node in arena). |
-| `scripts/hud.gd` | HP readout + game-over banner (HUD `CanvasLayer` in arena). |
+| `scripts/hud.gd` | HP readout + current-weapon readout + game-over banner (HUD `CanvasLayer` in arena). |
 
 **Collision layers**: player = layer 1, enemies = layer 2; bullets mask
 layer 2, the enemy `Touch` area masks layer 1. Bodies don't physically block
 each other yet (masks are 0) — enemies overlap freely, which is acceptable
 for now.
 
-**Not built yet**: weapon variety, waves/score, pickups/perks, audio, hit/death
-juice. See the build order under Architecture.
+**Not built yet**: waves/score, pickups/perks, hit/death juice (audio is
+wired). See the build order under Architecture.
 
 ## Building through the Godot MCP (`godot-ai`)
 
@@ -77,9 +84,9 @@ Current layout (create subdirs as needed, don't scaffold empty dirs ahead of use
 
 ```
 scenes/        # .tscn — arena (main), player, enemy, bullet  (+ later: menu, pickups/)
-scripts/       # .gd — gameplay logic  (+ later: autoload singletons)
-resources/     # .tres — WeaponData, EnemyData, PerkData, WaveData  (not yet created)
-assets/        # art, audio, fonts  (not yet created)
+scripts/       # .gd — gameplay logic + Sfx autoload  (+ later: more singletons)
+resources/     # .tres — weapons/ (WeaponData) done; later: EnemyData, PerkData, WaveData
+assets/        # sprites/, audio/, textures/
 addons/        # godot-ai plugin (vendored, committed)
 ```
 
@@ -87,7 +94,7 @@ Systems, in rough build order (✓ = done):
 1. ✓ **Player** — `CharacterBody2D`, move + aim toward cursor, click-to-fire.
 2. ✓ **Enemies (basic)** — edge spawner, homing, contact damage.
 3. ✓ **HUD + game loop (basic)** — health readout, death → restart.
-4. **Weapons** — data-driven `WeaponData` resources; fire rate, projectile count, spread.
+4. ✓ **Weapons** — data-driven `WeaponData` resources; fire rate, projectile count, spread. Four weapons authored; keys 1-4 switch (placeholder for pickups).
 5. **Waves + score** — escalating spawn rate/variety, kill count.
 6. **Pickups / perks** — weapon and perk drops, run-scoped modifiers.
 7. **Juice** — hit flash, death particles, screen shake, sfx.
@@ -106,6 +113,16 @@ terminal states for it (death), rather than relying on external listeners.
 - **Input**: define actions in the Input Map (`input_map_manage`), reference by
   name — never hardcode raw keycodes in gameplay scripts.
 - **Signals over polling** for decoupled events (enemy died, pickup grabbed).
+- **Sound effects**: `Sfx.play()` spawns a one-shot player per call that runs
+  the stream to completion, so source samples must be short or rapid fire
+  stacks into mush. Weapon fire sounds are sourced from the Counter-Strike pack
+  at `../cstrike/sound/weapons/` (sibling repo) and **trimmed to the transient**
+  (CS samples bake a long decay tail) sized to each weapon's fire cadence, with
+  a short fade-out — no ffmpeg/sox on this machine, so trim with a stdlib
+  `python3` `wave`/`array` script. SMG ≈ 0.18s (MP5), Rifle ≈ 0.5s (AWP),
+  Shotgun ≈ 0.55s (M3). Re-trimming an *already-imported* wav hits the stale
+  baked-asset gotcha below — delete `.godot/imported/<name>.wav-*.sample` +
+  `.md5` and force a rescan, same as textures.
 - **Sprite facing**: all character/enemy art must face **+X (right)** — that's
   the axis `look_at()` aims (`local +X` → target). The current art pack
   (`assets/sprites/survivor_*`, `zombie`) was authored facing **−Y (up)**, so

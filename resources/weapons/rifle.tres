@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://c3j7fcbwb82r8" path="res://scripts/weapon_data.gd" id="1_wd"]
+[ext_resource type="Texture2D" uid="uid://cw6yvo3v8ladp" path="res://assets/sprites/survivor_rifle.png" id="2_spr"]
+[ext_resource type="AudioStream" uid="uid://cptfqcob3sj5g" path="res://assets/audio/rifle.wav" id="3_snd"]
+
+[resource]
+script = ExtResource("1_wd")
+display_name = "Rifle"
+sprite = ExtResource("2_spr")
+fire_cooldown = 0.4
+projectile_count = 1
+spread_degrees = 1.0
+damage = 34
+bullet_speed = 1600.0
+bullet_lifetime = 2.0
+pierce = 5
+fire_sound = ExtResource("3_snd")

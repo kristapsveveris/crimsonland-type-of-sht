@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://c3j7fcbwb82r8" path="res://scripts/weapon_data.gd" id="1_wd"]
+[ext_resource type="Texture2D" uid="uid://b16ceiqgtqaw5" path="res://assets/sprites/survivor_smg.png" id="2_spr"]
+[ext_resource type="AudioStream" uid="uid://bd2ip1q7volw6" path="res://assets/audio/smg.wav" id="3_snd"]
+
+[resource]
+script = ExtResource("1_wd")
+display_name = "SMG"
+sprite = ExtResource("2_spr")
+fire_cooldown = 0.07
+projectile_count = 1
+spread_degrees = 7.0
+damage = 11
+bullet_speed = 1000.0
+bullet_lifetime = 1.1
+fire_sound = ExtResource("3_snd")

@@ -4,7 +4,7 @@ extends CharacterBody2D
 ## Walks straight toward the player and deals contact damage on a cooldown.
 ## Owns its own health and despawn (single terminal owner).
 
-@export var speed: float = 120.0
+@export var speed: float = 96.0  # 20% slower than the original 120
 @export var max_health: int = 50
 @export var contact_damage: int = 10
 @export var contact_interval: float = 0.5
