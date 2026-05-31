@@ -2,12 +2,20 @@ class_name Enemy
 extends CharacterBody2D
 
 ## Walks straight toward the player and deals contact damage on a cooldown.
-## Owns its own health and despawn (single terminal owner).
+## Owns its own health and despawn (single terminal owner). When killed by
+## damage it announces the kill (and its point value) via `killed` so the
+## game loop can score it — the enemy still owns the death; listeners only
+## observe it.
+
+## Emitted once, when this enemy is killed by damage (not on any other
+## despawn). Carries the points the kill is worth.
+signal killed(score_value: int)
 
 @export var speed: float = 96.0  # 20% slower than the original 120
 @export var max_health: int = 50
 @export var contact_damage: int = 10
 @export var contact_interval: float = 0.5
+@export var score_value: int = 100
 
 ## Played on death. "headshot" is the only kill sound in the pack for now;
 ## swap for a dedicated crit sound once a headshot/crit system exists.
@@ -51,4 +59,5 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	if health <= 0:
 		_sfx.play(SND_KILL, -3.0, randf_range(0.95, 1.08))
+		killed.emit(score_value)
 		queue_free()

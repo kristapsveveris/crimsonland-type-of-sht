@@ -12,36 +12,48 @@ invariant, don't extract abstractions on first occurrence, no silent failures).
 
 ## Current state
 
-**Vertical slice + data-driven weapons are in.** The core twin-stick loop
-works: WASD/arrows move, mouse aims, left-click fires; enemies spawn at the
-arena edges, home in on the player, and deal contact damage; the player owns
-its health and death; death triggers a restart after 2s. Firing is now fully
-data-driven — the player reads its stats from an equipped `WeaponData`
-resource and supports multi-projectile spread. Four weapons (Pistol, Shotgun,
-SMG, Rifle) are authored as `.tres`; number keys **1-4** swap between them
-(a stand-in until weapon pickups land in #6). Each weapon has its own fire
-sound (pistol, plus MP5/AWP/M3 trimmed from the CS pack — see Assets).
+**Vertical slice + data-driven weapons + continuous waves/score are in.** The
+core twin-stick loop works: WASD/arrows move, mouse aims, left-click fires;
+enemies spawn at the arena edges, home in on the player, and deal contact
+damage; the player owns its health and death; death triggers a restart after
+2s. Firing is now fully data-driven — the player reads its stats from an
+equipped `WeaponData` resource and supports multi-projectile spread. Four
+weapons (Pistol, Shotgun, SMG, Rifle) are authored as `.tres`; number keys
+**1-4** swap between them (a stand-in until weapon pickups land in #6). Each
+weapon has its own fire sound (pistol, plus MP5/AWP/M3 trimmed from the CS
+pack — see Assets).
+
+**Waves are continuous escalation** (Crimsonland-survival style, not discrete
+clear-the-room rounds): the spawner derives a wave number from elapsed
+survival time, tightens the spawn interval per wave (toward a floor), scales
+each enemy's HP/speed/worth per wave, and grows the concurrent spawn count
+every few waves. Escalation is **procedural** (formulas + exported knobs on
+the spawner), not yet `WaveData` `.tres` — real enemy *variety* (distinct
+types) waits on `EnemyData`. Score/kills are tracked: each enemy announces its
+own kill (it owns its death), the spawner forwards it, and the arena turns it
+into score. The HUD shows wave + score/kills live and the final tally on the
+game-over banner.
 
 What exists (all authored through the Godot MCP):
 
 | Scene / script | Role |
 | --- | --- |
-| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player→HUD signals (health, weapon) and the death→restart loop. |
+| `scenes/arena.tscn` + `scripts/arena.gd` | Main scene. Wires player + spawner → HUD signals (health, weapon, wave, score), owns the run-scoped score/kill tally, and the death→restart loop. |
 | `scenes/player.tscn` + `scripts/player.gd` | `CharacterBody2D`. Move, aim (`look_at` cursor), data-driven fire from the equipped `WeaponData` (cooldown, pellet count, spread). Owns health + `died`; emits `weapon_changed`. Number keys 1-4 switch weapons. |
 | `scripts/weapon_data.gd` | `WeaponData` `Resource` — display_name, sprite, fire_cooldown, projectile_count, spread_degrees, damage, bullet_speed, bullet_lifetime, `pierce` (enemies one shot passes through), fire_sound. |
 | `resources/weapons/*.tres` | Pistol / Shotgun / SMG / Rifle definitions (each pairs stats with its `survivor_*` sprite). Rifle is the piercing weapon: slow fire, fast round, `pierce = 5`. |
 | `scenes/bullet.tscn` + `scripts/bullet.gd` | `Area2D` projectile. Per-shot speed/damage/lifetime set by the player before spawn; forward travel, lifetime despawn, damages enemies on overlap. |
-| `scenes/enemy.tscn` + `scripts/enemy.gd` | Homing `CharacterBody2D`. `Touch` area applies contact damage on a cadence. Owns health + despawn. |
-| `scripts/spawner.gd` | Spawns enemies at random arena edges on an interval (`Spawner` node in arena). |
-| `scripts/hud.gd` | HP readout + current-weapon readout + game-over banner (HUD `CanvasLayer` in arena). |
+| `scenes/enemy.tscn` + `scripts/enemy.gd` | Homing `CharacterBody2D`. `Touch` area applies contact damage on a cadence. Owns health + despawn; emits `killed(score_value)` on death-by-damage. `score_value` + stats are scaled per wave by the spawner. |
+| `scripts/spawner.gd` | `Spawner` node in arena. Spawns enemies at random edges and owns continuous difficulty escalation (wave # from elapsed time, shrinking interval, per-wave stat scaling, growing burst size). Emits `wave_changed` and forwards `enemy_killed`. |
+| `scripts/hud.gd` | HP + current-weapon + wave + score/kills readouts and a game-over banner with the final tally (HUD `CanvasLayer` in arena). |
 
 **Collision layers**: player = layer 1, enemies = layer 2; bullets mask
 layer 2, the enemy `Touch` area masks layer 1. Bodies don't physically block
 each other yet (masks are 0) — enemies overlap freely, which is acceptable
 for now.
 
-**Not built yet**: waves/score, pickups/perks, hit/death juice (audio is
-wired). See the build order under Architecture.
+**Not built yet**: pickups/perks, hit/death juice (audio is wired), and enemy
+*variety* via `EnemyData`. See the build order under Architecture.
 
 ## Building through the Godot MCP (`godot-ai`)
 
@@ -95,7 +107,7 @@ Systems, in rough build order (✓ = done):
 2. ✓ **Enemies (basic)** — edge spawner, homing, contact damage.
 3. ✓ **HUD + game loop (basic)** — health readout, death → restart.
 4. ✓ **Weapons** — data-driven `WeaponData` resources; fire rate, projectile count, spread. Four weapons authored; keys 1-4 switch (placeholder for pickups).
-5. **Waves + score** — escalating spawn rate/variety, kill count.
+5. ✓ **Waves + score** — continuous escalation (wave # from elapsed time, shrinking interval, per-wave enemy stat scaling, growing burst), kill/score tally on the HUD. Procedural for now; `WaveData`/`EnemyData` variety deferred.
 6. **Pickups / perks** — weapon and perk drops, run-scoped modifiers.
 7. **Juice** — hit flash, death particles, screen shake, sfx.
 

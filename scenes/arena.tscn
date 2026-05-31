@@ -35,11 +35,12 @@ offset_bottom = 33.0
 text = "HP: 100 / 100"
 
 [node name="GameOverLabel" type="Label" parent="HUD" unique_id=1450982529]
-offset_left = 560.0
-offset_top = 330.0
-offset_right = 652.0
-offset_bottom = 353.0
+offset_left = 490.0
+offset_top = 320.0
+offset_right = 790.0
+offset_bottom = 380.0
 text = "GAME OVER"
+horizontal_alignment = 1
 
 [node name="WeaponLabel" type="Label" parent="HUD" unique_id=1023872424]
 offset_left = 16.0
@@ -47,3 +48,17 @@ offset_top = 34.0
 offset_right = 216.0
 offset_bottom = 57.0
 text = "Weapon: Pistol"
+
+[node name="WaveLabel" type="Label" parent="HUD" unique_id=1297870251]
+offset_left = 16.0
+offset_top = 58.0
+offset_right = 17.0
+offset_bottom = 81.0
+text = "Wave: 1"
+
+[node name="ScoreLabel" type="Label" parent="HUD" unique_id=1402867149]
+offset_left = 16.0
+offset_top = 82.0
+offset_right = 256.0
+offset_bottom = 105.0
+text = "Score: 0   Kills: 0"
