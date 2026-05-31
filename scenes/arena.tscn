@@ -37,14 +37,6 @@ offset_right = 116.0
 offset_bottom = 33.0
 text = "HP: 100 / 100"
 
-[node name="GameOverLabel" type="Label" parent="HUD" unique_id=1450982529]
-offset_left = 490.0
-offset_top = 320.0
-offset_right = 790.0
-offset_bottom = 380.0
-text = "GAME OVER"
-horizontal_alignment = 1
-
 [node name="WeaponLabel" type="Label" parent="HUD" unique_id=1023872424]
 offset_left = 16.0
 offset_top = 34.0
@@ -112,3 +104,47 @@ offset_top = 270.0
 offset_right = 840.0
 offset_bottom = 550.0
 theme_override_constants/separation = 12
+
+[node name="GameOver" type="Control" parent="HUD" unique_id=975412824]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Dim" type="ColorRect" parent="HUD/GameOver" unique_id=953612014]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.75)
+
+[node name="Title" type="Label" parent="HUD/GameOver" unique_id=668916280]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 170.0
+offset_right = 1040.0
+offset_bottom = 290.0
+theme_override_colors/font_color = Color(1, 0.22, 0.22, 1)
+theme_override_font_sizes/font_size = 96
+text = "GAME OVER"
+horizontal_alignment = 1
+
+[node name="Stats" type="Label" parent="HUD/GameOver" unique_id=1568316611]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 310.0
+offset_right = 1040.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 44
+text = "Score: 0
+Kills: 0"
+horizontal_alignment = 1
+
+[node name="RetryButton" type="Button" parent="HUD/GameOver" unique_id=1311225217]
+layout_mode = 0
+offset_left = 515.0
+offset_top = 430.0
+offset_right = 765.0
+offset_bottom = 500.0
+theme_override_font_sizes/font_size = 36
+text = "RETRY"

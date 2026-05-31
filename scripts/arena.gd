@@ -73,6 +73,12 @@ var _choice_armed: bool = false
 ## looks alive until you pick.
 const LEVELUP_DELAY := 0.35
 
+## Beat between death and freezing the tree, so the death sound + camera shake
+## play out before the action stops behind the game-over screen (same reasoning
+## as LEVELUP_DELAY). The game-over overlay processes while paused, so RETRY
+## stays clickable.
+const DEATH_FREEZE_DELAY := 0.6
+
 func _ready() -> void:
 	player.health_changed.connect(hud.set_health)
 	player.weapon_changed.connect(hud.set_weapon)
@@ -80,6 +86,7 @@ func _ready() -> void:
 	player.xp_changed.connect(hud.set_xp)
 	player.leveled_up.connect(_on_player_leveled_up)
 	hud.perk_chosen.connect(_on_perk_chosen)
+	hud.retry_pressed.connect(_restart)
 	spawner.wave_changed.connect(hud.set_wave)
 	spawner.enemy_killed.connect(_on_enemy_killed)
 	player.hit.connect(_on_player_hit)
@@ -152,7 +159,12 @@ func _on_perk_chosen(perk: PerkData) -> void:
 func _on_player_died() -> void:
 	camera.add_trauma(1.0)
 	hud.show_game_over(score, kills)
-	get_tree().create_timer(2.0).timeout.connect(_restart)
+	get_tree().create_timer(DEATH_FREEZE_DELAY).timeout.connect(_freeze_for_game_over)
+
+func _freeze_for_game_over() -> void:
+	get_tree().paused = true
 
 func _restart() -> void:
+	# paused persists across a scene reload, so clear it or the fresh run starts frozen.
+	get_tree().paused = false
 	get_tree().reload_current_scene()

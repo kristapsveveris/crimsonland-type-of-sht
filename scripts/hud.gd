@@ -10,19 +10,26 @@ extends CanvasLayer
 ## listens, applies the perk, and unpauses.
 signal perk_chosen(perk: PerkData)
 
+## Emitted when the player clicks RETRY on the game-over screen. The arena
+## listens and reloads the scene.
+signal retry_pressed
+
 @onready var health_label: Label = $HealthLabel
 @onready var weapon_label: Label = $WeaponLabel
 @onready var wave_label: Label = $WaveLabel
 @onready var score_label: Label = $ScoreLabel
 @onready var level_label: Label = $LevelLabel
 @onready var xp_bar: ProgressBar = $XPBar
-@onready var game_over_label: Label = $GameOverLabel
+@onready var game_over: Control = $GameOver
+@onready var game_over_stats: Label = $GameOver/Stats
+@onready var retry_button: Button = $GameOver/RetryButton
 @onready var perk_choice: Control = $PerkChoice
 @onready var button_box: VBoxContainer = $PerkChoice/ButtonBox
 
 func _ready() -> void:
-	game_over_label.hide()
+	game_over.hide()
 	perk_choice.hide()
+	retry_button.pressed.connect(func() -> void: retry_pressed.emit())
 
 func set_health(current: int, maximum: int) -> void:
 	health_label.text = "HP: %d / %d" % [current, maximum]
@@ -61,5 +68,5 @@ func _on_perk_button_pressed(perk: PerkData) -> void:
 	perk_chosen.emit(perk)
 
 func show_game_over(score: int, kills: int) -> void:
-	game_over_label.text = "GAME OVER\nScore: %d   Kills: %d" % [score, kills]
-	game_over_label.show()
+	game_over_stats.text = "Score: %d\nKills: %d" % [score, kills]
+	game_over.show()
