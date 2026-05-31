@@ -7,6 +7,9 @@ extends Resource
 
 @export var display_name: String = "Weapon"
 @export var sprite: Texture2D                ## survivor_* sprite shown while equipped
+## Region into the shared side-view gun sheet (guns_side_view.png, 4×64px frames)
+## used by weapon pickups. Zero size => pickup shows the whole sheet, so set it.
+@export var icon_region: Rect2 = Rect2(0, 0, 64, 64)
 @export_range(0.02, 2.0, 0.01) var fire_cooldown: float = 0.25  ## seconds between shots
 @export_range(1, 24) var projectile_count: int = 1             ## pellets per trigger pull
 @export_range(0.0, 180.0, 0.5) var spread_degrees: float = 0.0 ## total cone width across pellets

@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dtv54bh74s7wr" path="res://scenes/player.tscn" id="2_4ag8t"]
 [ext_resource type="Texture2D" uid="uid://buea7rbrv8861" path="res://assets/textures/grass_ground.png" id="2_dpxgc"]
 [ext_resource type="Script" uid="uid://bl5q35lmn71rj" path="res://scripts/spawner.gd" id="3_dpxgc"]
+[ext_resource type="Script" uid="uid://dhxdrhralkl4g" path="res://scripts/camera_shake.gd" id="3_oexds"]
 [ext_resource type="PackedScene" uid="uid://b4b41bqpsuec6" path="res://scenes/enemy.tscn" id="4_oexds"]
 [ext_resource type="Script" uid="uid://cpp17ho7mwnrp" path="res://scripts/hud.gd" id="5_naajo"]
 
@@ -16,6 +17,8 @@ centered = false
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=182938934]
 position = Vector2(640, 360)
+ignore_rotation = false
+script = ExtResource("3_oexds")
 
 [node name="Player" parent="." unique_id=669154557 instance=ExtResource("2_4ag8t")]
 position = Vector2(640, 360)

@@ -20,3 +20,10 @@ shape = SubResource("CircleShape2D_dqkch")
 
 [node name="Muzzle" type="Marker2D" parent="." unique_id=825563770]
 position = Vector2(20, 0)
+
+[node name="MuzzleFlash" type="Polygon2D" parent="." unique_id=1924184387]
+visible = false
+z_index = 1
+position = Vector2(22, 0)
+color = Color(1, 0.93, 0.5, 0.95)
+polygon = PackedVector2Array(-6, 0, 0, -7, 24, 0, 0, 7)

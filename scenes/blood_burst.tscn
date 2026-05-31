@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://dkhrpgcbmasl8"]
+
+[ext_resource type="Script" uid="uid://b8svuvh04capf" path="res://scripts/blood_burst.gd" id="1_o5qa1"]
+
+[node name="BloodBurst" type="CPUParticles2D" unique_id=1927474151]
+emitting = false
+amount = 20
+lifetime = 0.55
+one_shot = true
+explosiveness = 1.0
+spread = 180.0
+initial_velocity_min = 90.0
+initial_velocity_max = 280.0
+damping_min = 80.0
+damping_max = 160.0
+scale_amount_min = 2.0
+scale_amount_max = 5.0
+color = Color(0.62, 0.04, 0.04, 1)
+script = ExtResource("1_o5qa1")

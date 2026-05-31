@@ -8,6 +8,7 @@
 script = ExtResource("1_wd")
 display_name = "Pistol"
 sprite = ExtResource("2_spr")
+icon_region = Rect2(0, 0, 64, 64)
 fire_cooldown = 0.28
 projectile_count = 1
 spread_degrees = 1.0

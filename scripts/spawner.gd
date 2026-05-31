@@ -13,7 +13,7 @@ extends Node2D
 signal wave_changed(wave: int)
 ## Forwarded from each spawned enemy when it is killed, so the game loop can
 ## score it without the spawner itself caring what a kill is worth.
-signal enemy_killed(score_value: int)
+signal enemy_killed(score_value: int, position: Vector2)
 
 @export var enemy_scene: PackedScene
 @export var arena_size: Vector2 = Vector2(1280, 720)
@@ -80,8 +80,8 @@ func _spawn() -> void:
 	enemy.global_position = _edge_point()
 	add_child(enemy)
 
-func _on_enemy_killed(score_value: int) -> void:
-	enemy_killed.emit(score_value)
+func _on_enemy_killed(score_value: int, position: Vector2) -> void:
+	enemy_killed.emit(score_value, position)
 
 func _edge_point() -> Vector2:
 	match randi() % 4:
