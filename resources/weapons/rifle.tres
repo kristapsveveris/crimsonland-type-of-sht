@@ -8,10 +8,11 @@
 script = ExtResource("1_wd")
 display_name = "Rifle"
 sprite = ExtResource("2_spr")
-fire_cooldown = 0.4
+icon_region = Rect2(64, 0, 64, 64)
+fire_cooldown = 0.55
 projectile_count = 1
 spread_degrees = 1.0
-damage = 34
+damage = 55
 bullet_speed = 1600.0
 bullet_lifetime = 2.0
 pierce = 5
